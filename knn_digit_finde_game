@@ -1,0 +1,230 @@
+//Угадываетпо двум вопросам загаданное число от 1 до 10
+
+#include <iostream>
+#include <string>
+#include <vector>
+#include <ctime>
+#include <algorithm>
+#include <cstdlib>
+#include <random>
+
+class KNN_Answer {
+public:
+  KNN_Answer(size_t start, size_t end) : s_start_diapozon(start), s_end_diapozon(end){
+    unsigned rand_value = 11;
+    //srand(time(NULL));
+    error = 0;
+    
+  }
+  
+  
+  void answer() {
+     srand(time(NULL));
+     size_t start_diapozon = s_start_diapozon; //Левый диапозон
+     size_t end_diapozon = s_end_diapozon; //Правый диапозон
+    one_game.distance = 0;
+    //Генерируем первый вопрос
+    qwes first = get_question(start_diapozon, end_diapozon);   
+    
+    std::string user_answer; //Ответ пользователя
+    //Задаем вопрос
+    std::string what;
+    if(first.way == 1) {
+      what = "more";
+    } else {
+      what = "less";
+    }
+    //Выводим на экран
+    std::cout << "Digit " << what << " then " <<
+      first.digit << "?" << std::endl;
+    //Получаем ответ пользователя
+    std::cin >> user_answer;    
+    //Обрабатываем ответ пользователя
+    if ((user_answer == "yes") || (user_answer == "y")) {
+      if (first.way == 1) {
+	start_diapozon = first.digit;
+	one_game.first_way = 1;
+	one_game.first_digit = first.digit;
+      } else {
+	one_game.first_way = 0;
+	one_game.first_digit = first.digit;
+	end_diapozon = first.digit;
+      }
+      //std::cout << first.digit << std::endl;
+    } else if ((user_answer == "no") || (user_answer == "n")) {
+      //Все, что и при угадывании, но наоборот
+      if (first.way == 1) {
+	end_diapozon = first.digit;	
+	one_game.first_way = 0;
+	one_game.first_digit = first.digit;
+      } else {
+	one_game.first_way = 1;
+	one_game.first_digit = first.digit;
+	start_diapozon = first.digit;
+      }      
+    } else {
+      std::cout << " Type yes or no (y or n) only!" << std::endl;
+    }
+    //Генерируем второй ворос
+    qwes second = get_question(start_diapozon, end_diapozon);
+    //Задаем вопрос
+    if(second.way == 1) {
+      what = "more";
+    } else {
+      what = "less";
+    }
+    //Выводим на экран
+    std::cout << "Digit " << what << " then " <<
+      second.digit << "?" << std::endl;
+    //Получаем ответ пользователя
+    std::cin >> user_answer;
+    //Обрабатываем ответ пользователя
+    if ((user_answer == "yes") || (user_answer == "y")) {
+      if (second.way == 1) {
+	start_diapozon = second.digit;
+	one_game.second_way = 1;
+	one_game.second_digit = second.digit;
+      } else {
+	one_game.second_way = 0;
+	one_game.second_digit = second.digit;
+	end_diapozon = second.digit;
+      }
+      //std::cout << first.digit << std::endl;
+    } else if ((user_answer == "no") || (user_answer == "n")) {
+      //Все, что и при угадывании, но наоборот
+      if (second.way == 1) {
+	end_diapozon = second.digit;	
+	one_game.second_way = 0;
+	one_game.second_digit = second.digit;
+      } else {
+	one_game.second_way = 1;
+	one_game.second_digit = second.digit;
+	start_diapozon = second.digit;
+      }      
+    } else {
+      std::cout << " Type yes or no (y or n) only!" << std::endl;
+    }
+    //Теперь угадываем цифру
+    size_t answer_system;
+    answ_type = 0;
+    if ((table.size() < 4) || (error == 3)) {
+      //Примеров нет, просто генерируем случайное число
+      answer_system = get_question(start_diapozon, end_diapozon).digit;
+      //Сбрасываем ошибку, если ее уже три
+      if (error == 3) {
+	error = 0;
+      }
+    } else {
+      std::cout << "Im sinking..." << std::endl;
+      //Получаем ответ методом ближайшего соседа
+      answer_system = knn();
+      answ_type = 1;
+    }
+    std::cout << "Your digit is " << answer_system
+	      << " right?" << std::endl;
+    //Спрашиваем у пользователя
+    //Получаем ответ пользователя
+    std::cin >> user_answer;
+    //Обрабатываем ответ пользователя
+    if ((user_answer == "yes") || (user_answer == "y")) {
+      std::cout << "Great..!!" << std::endl;
+      //Вносим правильный ответ в нашу таблицу
+      one_game.write_answer = answer_system;
+      table.push_back(one_game); //Добавляем	
+    } else if ((user_answer == "no") || (user_answer == "n")) {
+      std::cout << "Ou.. Sorry." << std::endl;
+      //Смотрим, это был рандомный ответ или по методу ближайшего соседа
+      if(answ_type == 1) {
+	error++;
+      }
+    } else {
+      std::cout << " Type yes or no (y or n) only!" << std::endl;
+    }
+  }
+
+private:
+  size_t answ_type;
+  size_t s_start_diapozon; //Левый диапозон
+  size_t s_end_diapozon; //Правый диапозон
+  size_t error; //Количество ошибок по методу ближайшего со
+  //Структура вопрос ответ
+  struct qwes {
+    size_t way; //Направление
+    size_t digit; //Цифра
+  };
+  //Строка-вектор из таблицы прецедентиов
+  struct row {
+    size_t first_way;
+    size_t first_digit;
+    size_t second_way;
+    size_t second_digit;
+    size_t write_answer;
+    double distance; //Дистанция до текущего вектор
+  };
+  std::vector <row> table; //Массив векторов-прецедентов
+  row one_game; //Одна игра (одна строка)
+
+  size_t knn() {
+    //Вычисляем метрику манхете
+    size_t kol = table.size();
+    for (size_t i = 0; i < kol; i++) {
+      //Вычисляем расстояние до каждого элемента
+      manhetn(table[i]);
+    }
+    //Теперь сортируем по дистанции от самого близкого до самого дальнего
+    for(size_t i = 0 ; i < table.size() - 1; i++) { 
+       // сравниваем два соседних элемента.
+       for(size_t j = 0 ; j < table.size() - i - 1 ; j++) {
+	 
+           if(table[j].distance > table[j+1].distance) {           
+              // если они идут в неправильном порядке, то  
+              //  меняем их местами. 
+              row tmp = table[j];
+              table[j] = table[j+1] ;
+              table[j+1] = tmp; 
+           }
+        }
+    }
+    //for(size_t i = 0 ; i < table.size(); i++) {
+    //  std::cout << table[i].distance << std::endl;
+    //}
+    //Возвращаем ответ ближайшего соседа
+    return table[0].write_answer;    
+  }
+  
+  //Сгенерировать вопрос
+  qwes get_question(size_t start, size_t end) {
+    //std::random_device rd;
+    //std::uniform_int_distribution<int> spread1 (start, end);
+    size_t digit = rand() % (end - start + 1) + start;
+    //size_t digit = spread1(rd);
+    size_t way = rand() % 2;
+    //Смотрим крайние случаи
+    if (digit == 1) {
+      way = 1;
+    } else if (digit == 10) {
+      way = 0;
+    }
+    qwes answer = {way, digit};
+    return answer;
+  }
+  
+  //Метрика манхетн
+  void manhetn(row &element){
+    element.distance =  abs(element.first_way - one_game.first_way) + abs(element.first_digit - one_game.first_digit) +
+      abs(element.second_way - one_game.second_way) + abs(element.second_digit - one_game.second_digit);
+  }
+
+};
+
+
+int main() {
+  KNN_Answer a(1, 10);
+  //srand(time(0));
+  while(1 == 1) {
+    //srand(time(0));
+    a.answer();
+  }
+  return 0;
+
+}
