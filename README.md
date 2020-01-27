@@ -1,4 +1,4 @@
 # knn_with_kernel
-I am study machine learning an c++. My programmer skils are bad.
+I am study machine learning an c++. 
 
 Parzenovsky window method.
